@@ -1,10 +1,10 @@
 const mongoose = require('mongoose'); //we import the mongose so it lets us talk to the mongodb database
 
 const connectDB = async ()=>{
-    //creating the connectDB function and using async function so it will do the thing that takes time like connecting to the internet
+    //creating the conectDB function and using async function so it will do the thing that takes time like conncting to the internet
     try{
-        const conn = await mongoose.connect(process.env.MONGO_URI);
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
+        const conn = await mongoose.connect(process.env.Mongoo_URI);//await means wait here until mongoose finsish connecting
+        console.log('MongoDB Connected: ${conn.connection.host}'); //if the connection is successful then it will print the message in the console
 
     }
     catch(err){
