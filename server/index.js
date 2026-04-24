@@ -35,11 +35,11 @@ app.use(express.json());
 // Allow the server to understand form data
 app.use(express.urlencoded({ extended: true }));
 
-// ROUTES — we'll connect these files one by one as we build them
-// app.use('/api/auth', require('./routes/authRoutes'));
-// app.use('/api/treks', require('./routes/trekRoutes'));
-// app.use('/api/gallery', require('./routes/galleryRoutes'));
-// app.use('/api/posts', require('./routes/postRoutes'));
+// ROUTES — we'll connect these files 
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/treks', require('./routes/trekRoutes'));
+app.use('/api/gallery', require('./routes/galleryRoutes'));
+app.use('/api/posts', require('./routes/postRoutes'));
 
 // A simple test route — visiting http://localhost:5000 should show this message
 app.get('/', (req, res) => {
