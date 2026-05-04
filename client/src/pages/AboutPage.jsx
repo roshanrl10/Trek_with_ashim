@@ -1,47 +1,28 @@
 import { Link } from 'react-router-dom'
 import { Award, Shield, Heart, Users, Mountain, ArrowRight } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import api from '../api/axios'
+import Spinner from '../components/common/Spinner'
 
 const AboutPage = () => {
+  const { data: about, isLoading } = useQuery({
+    queryKey: ['about'],
+    queryFn: () => api.get('/about').then(res => res.data),
+  })
 
-  const certifications = [
-    'Nepal Mountaineering Association (NMA) Licensed Guide',
-    'Wilderness First Responder (WFR) Certified',
-    'High Altitude Trekking Certificate',
-    'Tourism Board of Nepal Licensed',
-    'English Speaking Trekking Guide',
-  ]
+  if (isLoading) return <Spinner />
 
-  const experiences = [
-    { year: '2014', event: 'Started guiding in the Everest region' },
-    { year: '2016', event: 'Completed first Manaslu Circuit guide' },
-    { year: '2018', event: 'Obtained WFR certification in Kathmandu' },
-    { year: '2020', event: 'Guided 500th trekker on Annapurna Circuit' },
-    { year: '2022', event: 'Launched Trek with Ashim platform' },
-    { year: '2024', event: 'Over 200 successful treks completed' },
-  ]
+  const iconMap = {
+    Shield: Shield,
+    Heart: Heart,
+    Users: Users,
+    Award: Award,
+  }
 
-  const values = [
-    {
-      icon: Shield,
-      title: 'Safety Above All',
-      desc: 'Every decision on the trail prioritizes your safety. Ashim carries emergency oxygen, a first aid kit, and satellite communication on every high altitude trek.',
-    },
-    {
-      icon: Heart,
-      title: 'Genuine Passion',
-      desc: 'Born and raised in the shadow of the Himalayas, Ashim\'s love for the mountains is not a job — it\'s a way of life passed down through generations.',
-    },
-    {
-      icon: Users,
-      title: 'Personal Connection',
-      desc: 'Small groups mean every trekker gets personal attention. Ashim remembers every client\'s name, pace, and preference.',
-    },
-    {
-      icon: Award,
-      title: 'Local Expertise',
-      desc: 'Deep roots in Nepali mountain communities mean access to authentic experiences — hidden trails, local teahouses, and genuine cultural moments.',
-    },
-  ]
+  const values = about?.values?.map(value => ({
+    ...value,
+    icon: iconMap[value.icon] || Shield,
+  })) || []
 
   return (
     <div className="bg-white">
@@ -61,11 +42,10 @@ const AboutPage = () => {
             className="text-5xl font-bold mb-4"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            Meet Ashim
+            {about?.heroTitle || 'Meet Ashim'}
           </h1>
           <p className="text-xl text-gray-200 max-w-2xl mx-auto">
-            Your trusted guide to Nepal's most breathtaking landscapes —
-            with over a decade of mountain experience
+            {about?.heroSubtitle || 'Your trusted guide to Nepal\'s most breathtaking landscapes'}
           </p>
         </div>
       </div>
@@ -79,8 +59,8 @@ const AboutPage = () => {
             <div className="relative">
               <div className="rounded-2xl overflow-hidden aspect-square max-w-md mx-auto">
                 <img
-                  src="https://images.unsplash.com/photo-1551632811-561732d1e306?w=600&q=80"
-                  alt="Ashim - Trek Guide"
+                  src={about?.profileImageUrl || "https://images.unsplash.com/photo-1551632811-561732d1e306?w=600&q=80"}
+                  alt={`${about?.name || 'Ashim'} - Trek Guide`}
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -91,7 +71,7 @@ const AboutPage = () => {
                 <div className="flex items-center gap-3">
                   <Mountain size={24} style={{ color: 'var(--color-forest-700)' }} />
                   <div>
-                    <p className="font-bold text-gray-900 text-sm">10+ Years</p>
+                    <p className="font-bold text-gray-900 text-sm">{about?.yearsExp || '10+'}</p>
                     <p className="text-gray-500 text-xs">Experience</p>
                   </div>
                 </div>
@@ -110,26 +90,32 @@ const AboutPage = () => {
                 className="text-4xl font-bold text-gray-900 mt-2 mb-6"
                 style={{ fontFamily: 'var(--font-heading)' }}
               >
-                A Life Lived in the Mountains
+                {about?.tagline || 'A Life Lived in the Mountains'}
               </h2>
               <div className="space-y-4 text-gray-600 leading-relaxed">
-                <p>
-                  I was born in a small village near the Langtang Valley, where the
-                  Himalayas were not a destination — they were home. Growing up, I watched
-                  trekkers arrive wide-eyed and leave transformed, and I knew I wanted to
-                  be part of that journey.
-                </p>
-                <p>
-                  After completing my guiding certification with the Nepal Mountaineering
-                  Association, I spent years learning every trail, teahouse, and weather
-                  pattern in Nepal's major trekking regions. I've guided over 500 trekkers
-                  from more than 40 countries through the world's greatest mountain landscapes.
-                </p>
-                <p>
-                  For me, trekking is not just about reaching a destination. It's about the
-                  conversations at teahouses, the unexpected sunrises, the friendships formed
-                  on difficult passes. Every trek I lead is unique — and I treat it that way.
-                </p>
+                {about?.bioParagraphs?.map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                )) || (
+                  <>
+                    <p>
+                      I was born in a small village near the Langtang Valley, where the
+                      Himalayas were not a destination — they were home. Growing up, I watched
+                      trekkers arrive wide-eyed and leave transformed, and I knew I wanted to
+                      be part of that journey.
+                    </p>
+                    <p>
+                      After completing my guiding certification with the Nepal Mountaineering
+                      Association, I spent years learning every trail, teahouse, and weather
+                      pattern in Nepal's major trekking regions. I've guided over 500 trekkers
+                      from more than 40 countries through the world's greatest mountain landscapes.
+                    </p>
+                    <p>
+                      For me, trekking is not just about reaching a destination. It's about the
+                      conversations at teahouses, the unexpected sunrises, the friendships formed
+                      on difficult passes. Every trek I lead is unique — and I treat it that way.
+                    </p>
+                  </>
+                )}
               </div>
               <div className="mt-8">
                 <Link to="/contact" className="btn-primary inline-flex items-center gap-2">
@@ -188,7 +174,7 @@ const AboutPage = () => {
                 Certifications
               </h2>
               <ul className="space-y-4">
-                {certifications.map(cert => (
+                {(about?.certifications || []).map(cert => (
                   <li key={cert} className="flex items-start gap-3">
                     <div
                       className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5"
@@ -211,7 +197,7 @@ const AboutPage = () => {
                 My Journey
               </h2>
               <div className="space-y-6">
-                {experiences.map((exp, i) => (
+                {(about?.timeline || []).map((exp, i) => (
                   <div key={i} className="flex gap-5">
                     {/* Year + line */}
                     <div className="flex flex-col items-center">
@@ -221,7 +207,7 @@ const AboutPage = () => {
                       >
                         {exp.year}
                       </div>
-                      {i < experiences.length - 1 && (
+                      {i < (about?.timeline?.length || 0) - 1 && (
                         <div
                           className="w-0.5 flex-1 mt-2"
                           style={{ backgroundColor: '#dcfce7', minHeight: '20px' }}
@@ -250,10 +236,10 @@ const AboutPage = () => {
             className="text-4xl font-bold mb-4"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
-            Ready to Trek Together?
+            {about?.ctaTitle || 'Ready to Trek Together?'}
           </h2>
           <p className="text-gray-300 mb-8 max-w-xl mx-auto">
-            Whether it's your first trek or your fiftieth, I'll make it unforgettable
+            {about?.ctaSubtitle || 'Whether it\'s your first trek or your fiftieth, I\'ll make it unforgettable'}
           </p>
           <Link to="/contact" className="btn-primary inline-flex items-center gap-2 text-lg py-4 px-8">
             Get in Touch

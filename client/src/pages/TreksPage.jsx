@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { SlidersHorizontal, X } from 'lucide-react'
 import { getTreks } from '../api/treks'
+import { getSettings } from '../api/settings'
 import TrekCard from '../components/trek/TrekCard'
 import Spinner from '../components/common/Spinner'
 

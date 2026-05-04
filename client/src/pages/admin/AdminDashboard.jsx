@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Map, Images, FileText, Plus, ArrowRight } from 'lucide-react'
 import { getAllTreksAdmin } from '../../api/treks'
 import Spinner from '../../components/common/Spinner'
+import { Settings, Mail, User } from 'lucide-react'
 
 const AdminDashboard = () => {
   // Fetch all treks (including drafts) for the stat count
@@ -42,31 +43,15 @@ const AdminDashboard = () => {
     },
   ]
 
-  const quickActions = [
-    {
-      icon:  Map,
-      label: 'Add New Trek',
-      desc:  'Create a new trek with photos and itinerary',
-      link:  '/admin/treks/new',
-      color: '#166534',
-      bg:    '#f0fdf4',
-    },
-    {
-      icon:  Images,
-      label: 'Upload Photos',
-      desc:  'Add memories to the gallery',
-      link:  '/admin/gallery',
-      color: '#0369a1',
-      bg:    '#f0f9ff',
-    },
-    {
-      icon:  FileText,
-      label: 'Write a Post',
-      desc:  'Share a story from your latest trek',
-      link:  '/admin/posts/new',
-      color: '#7c3aed',
-      bg:    '#faf5ff',
-    },
+ const quickActions = [
+    
+  { icon: Map,      label: 'Add New Trek',    desc: 'Create a new trek',         link: '/admin/treks/new',  color: '#166534', bg: '#f0fdf4' },
+  { icon: Images,   label: 'Upload Photos',   desc: 'Add to the gallery',        link: '/admin/gallery',    color: '#0369a1', bg: '#f0f9ff' },
+  { icon: FileText, label: 'Write a Post',    desc: 'Share a trek story',        link: '/admin/posts/new',  color: '#7c3aed', bg: '#faf5ff' },
+  { icon: Settings, label: 'Site Settings',   desc: 'Edit homepage content',     link: '/admin/settings',   color: '#b45309', bg: '#fffbeb' },
+  { icon: Mail,     label: 'View Messages',   desc: 'Check contact inquiries',   link: '/admin/messages',   color: '#0f766e', bg: '#f0fdfa' },
+  { icon: User,     label: 'Edit About Page', desc: 'Update your profile',       link: '/admin/about',      color: '#be185d', bg: '#fdf2f8' },
+  
   ]
 
   if (isLoading) return <Spinner />

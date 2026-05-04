@@ -1,216 +1,178 @@
 const Trek = require('../models/Trek');
 const { cloudinary } = require('../config/cloudinary');
 
-// ─────────────────────────────────────────────
-// GET ALL TREKS — GET /api/treks
-// Public — anyone can view treks
-// Supports filtering by region, difficulty, featured
-// Supports pagination (page 1, page 2, etc.)
-// ─────────────────────────────────────────────
 const getTreks = async (req, res) => {
-  // req.query contains URL parameters like /api/treks?region=Everest&difficulty=Moderate
-  const { region, difficulty, featured, page = 1, limit = 9 } = req.query;
+  try {
+    const { region, difficulty, featured, page = 1, limit = 9 } = req.query;
+    const query = { isPublished: true };
+    if (region)              query.region     = region;
+    if (difficulty)          query.difficulty = difficulty;
+    if (featured === 'true') query.isFeatured = true;
 
-  // Start with base query — only show published treks to the public
-  const query = { isPublished: true };
+    const total = await Trek.countDocuments(query);
+    const treks = await Trek.find(query)
+      .select('-itinerary -includes -excludes')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
 
-  // Add filters only if they were provided in the URL
-  if (region)            query.region     = region;
-  if (difficulty)        query.difficulty = difficulty;
-  if (featured === 'true') query.isFeatured = true;
-
-  // Count total matching treks (needed for pagination on the frontend)
-  const total = await Trek.countDocuments(query);
-
-  // Fetch the treks with pagination
-  const treks = await Trek.find(query)
-    // Don't send itinerary/includes/excludes in the list view — saves bandwidth
-    // The full details are loaded when a user clicks on a specific trek
-    .select('-itinerary -includes -excludes')
-    .sort({ completedDate: -1 }) // newest completed trek first
-    .skip((page - 1) * limit)   // skip past previous pages
-    .limit(Number(limit));       // only return this many results
-
-  res.json({
-    treks,
-    total,
-    page:  Number(page),
-    pages: Math.ceil(total / limit), // total number of pages
-  });
-};
-
-// ─────────────────────────────────────────────
-// GET ONE TREK — GET /api/treks/:slug
-// Public — loads full trek details by slug
-// e.g. GET /api/treks/everest-base-camp-trek
-// ─────────────────────────────────────────────
-const getTrekBySlug = async (req, res) => {
-  // req.params.slug is whatever comes after /api/treks/
-  const trek = await Trek.findOne({
-    slug:        req.params.slug,
-    isPublished: true, // don't show drafts to the public
-  });
-
-  if (!trek) {
-    return res.status(404).json({ message: 'Trek not found' });
+    res.json({ treks, total, page: Number(page), pages: Math.ceil(total / limit) });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  res.json(trek);
 };
 
-// ─────────────────────────────────────────────
-// GET ALL TREKS (ADMIN) — GET /api/treks/admin/all
-// Private — admin only, includes unpublished drafts
-// ─────────────────────────────────────────────
 const getAllTreksAdmin = async (req, res) => {
-  // No isPublished filter — admin sees everything
-  const treks = await Trek.find().sort({ createdAt: -1 });
-  res.json(treks);
+  try {
+    const treks = await Trek.find().sort({ createdAt: -1 });
+    res.json(treks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-// ─────────────────────────────────────────────
-// CREATE TREK — POST /api/treks
-// Private — admin only
-// ─────────────────────────────────────────────
+const getTrekBySlug = async (req, res) => {
+  try {
+    const trek = await Trek.findOne({ slug: req.params.slug, isPublished: true });
+    if (!trek) return res.status(404).json({ message: 'Trek not found' });
+    res.json(trek);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 const createTrek = async (req, res) => {
-  // req.body contains all the text fields (title, description, etc.)
-  // req.file contains the uploaded cover image (processed by multer + cloudinary)
-  const data = { ...req.body };
+  try {
+    const data = { ...req.body };
 
-  // If a cover image was uploaded, multer puts it in req.file
-  // req.file.path is the Cloudinary URL
-  // req.file.filename is the Cloudinary public_id (needed to delete later)
-  if (req.file) {
-    data.coverImage = {
-      url:      req.file.path,
-      publicId: req.file.filename,
-    };
-  }
+    // req.file is populated by multer ONLY when the file is correctly sent
+    // If this logs undefined, the frontend is not sending the file correctly
+    console.log('createTrek - req.file:', req.file ? req.file.path : 'NO FILE');
 
-  // When data is sent as FormData (which is needed for file uploads),
-  // arrays and objects come through as JSON strings — we need to parse them back
-  const jsonFields = ['itinerary', 'highlights', 'includes', 'excludes', 'bestSeason', 'groupSize'];
-  jsonFields.forEach(field => {
-    if (typeof data[field] === 'string') {
-      try {
-        data[field] = JSON.parse(data[field]);
-      } catch {
-        // if it fails, leave it as is
+    if (req.file) {
+      data.coverImage = {
+        url:      req.file.path,      // Cloudinary secure URL
+        publicId: req.file.filename,  // Cloudinary public_id for deletion
+        position: data.coverPosition || 'center center',
+      };
+    }
+
+    if (!req.file && data.coverPosition) {
+      data.coverImage = data.coverImage || {};
+      data.coverImage.position = data.coverPosition;
+    }
+
+    // Parse JSON strings back to arrays/objects
+    ['itinerary', 'highlights', 'includes', 'excludes', 'bestSeason', 'groupSize'].forEach(field => {
+      if (typeof data[field] === 'string') {
+        try { data[field] = JSON.parse(data[field]); } catch {}
       }
-    }
-  });
+    });
 
-  const trek = await Trek.create(data);
-  res.status(201).json(trek);
+    // FormData sends booleans as strings — convert them
+    if (data.isPublished === 'true')  data.isPublished = true;
+    if (data.isPublished === 'false') data.isPublished = false;
+    if (data.isFeatured  === 'true')  data.isFeatured  = true;
+    if (data.isFeatured  === 'false') data.isFeatured  = false;
+
+    const trek = await Trek.create(data);
+    res.status(201).json(trek);
+  } catch (error) {
+    console.error('createTrek error:', error.message);
+    res.status(500).json({ message: error.message });
+  }
 };
 
-// ─────────────────────────────────────────────
-// UPDATE TREK — PUT /api/treks/:id
-// Private — admin only
-// ─────────────────────────────────────────────
 const updateTrek = async (req, res) => {
-  // Find the trek by its MongoDB ID
-  const trek = await Trek.findById(req.params.id);
+  try {
+    const trek = await Trek.findById(req.params.id);
+    if (!trek) return res.status(404).json({ message: 'Trek not found' });
 
-  if (!trek) {
-    return res.status(404).json({ message: 'Trek not found' });
-  }
+    const data = { ...req.body };
 
-  const data = { ...req.body };
-
-  // If a new cover image was uploaded, delete the old one from Cloudinary first
-  if (req.file) {
-    if (trek.coverImage?.publicId) {
-      // Delete the old image from Cloudinary to avoid wasting storage
-      await cloudinary.uploader.destroy(trek.coverImage.publicId);
+    if (req.file) {
+      if (trek.coverImage?.publicId) {
+        await cloudinary.uploader.destroy(trek.coverImage.publicId).catch(() => {});
+      }
+      data.coverImage = { url: req.file.path, publicId: req.file.filename };
     }
-    data.coverImage = {
-      url:      req.file.path,
-      publicId: req.file.filename,
-    };
-  }
 
-  // Parse JSON string fields again (same reason as createTrek)
-  const jsonFields = ['itinerary', 'highlights', 'includes', 'excludes', 'bestSeason', 'groupSize'];
-  jsonFields.forEach(field => {
-    if (typeof data[field] === 'string') {
-      try { data[field] = JSON.parse(data[field]); } catch {}
+    if (data.coverPosition) {
+      data.coverImage = data.coverImage || trek.coverImage || {};
+      data.coverImage.position = data.coverPosition;
     }
-  });
 
-  // findByIdAndUpdate returns the NEW updated document (new: true)
-  // runValidators: true means the schema rules are checked during update too
-  const updatedTrek = await Trek.findByIdAndUpdate(
-    req.params.id,
-    data,
-    { new: true, runValidators: true }
-  );
+    ['itinerary', 'highlights', 'includes', 'excludes', 'bestSeason', 'groupSize'].forEach(field => {
+      if (typeof data[field] === 'string') {
+        try { data[field] = JSON.parse(data[field]); } catch {}
+      }
+    });
 
-  res.json(updatedTrek);
+    if (data.isPublished === 'true')  data.isPublished = true;
+    if (data.isPublished === 'false') data.isPublished = false;
+    if (data.isFeatured  === 'true')  data.isFeatured  = true;
+    if (data.isFeatured  === 'false') data.isFeatured  = false;
+
+    const updated = await Trek.findByIdAndUpdate(req.params.id, data, { new: true, runValidators: true });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
-// ─────────────────────────────────────────────
-// ADD IMAGES TO TREK — POST /api/treks/:id/images
-// Private — admin only
-// Ashim can add more photos to an existing trek
-// ─────────────────────────────────────────────
 const addTrekImages = async (req, res) => {
-  const trek = await Trek.findById(req.params.id);
+  try {
+    const trek = await Trek.findById(req.params.id);
+    if (!trek) return res.status(404).json({ message: 'Trek not found' });
+    if (!req.files?.length) return res.status(400).json({ message: 'No images uploaded' });
 
-  if (!trek) {
-    return res.status(404).json({ message: 'Trek not found' });
-  }
-
-  // req.files is an array when using .array() in the route
-  if (req.files && req.files.length > 0) {
     const newImages = req.files.map(file => ({
-      url:      file.path,
-      publicId: file.filename,
-      caption:  '', // empty caption by default — Ashim can edit later
+      url: file.path, publicId: file.filename, caption: '',
     }));
 
-    // Push new images into the existing images array
     trek.images.push(...newImages);
     await trek.save();
+    res.json({ message: newImages.length + ' image(s) added', images: trek.images });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  res.json(trek.images);
 };
 
-// ─────────────────────────────────────────────
-// DELETE TREK — DELETE /api/treks/:id
-// Private — admin only
-// Deletes the trek AND all its images from Cloudinary
-// ─────────────────────────────────────────────
-const deleteTrek = async (req, res) => {
-  const trek = await Trek.findById(req.params.id);
+const deleteTrekImage = async (req, res) => {
+  try {
+    const trek = await Trek.findById(req.params.id);
+    if (!trek) return res.status(404).json({ message: 'Trek not found' });
 
-  if (!trek) {
-    return res.status(404).json({ message: 'Trek not found' });
+    const image = trek.images.id(req.params.imageId);
+    if (!image) return res.status(404).json({ message: 'Image not found' });
+
+    if (image.publicId) await cloudinary.uploader.destroy(image.publicId).catch(() => {});
+    trek.images.pull(req.params.imageId);
+    await trek.save();
+    res.json({ message: 'Image deleted', images: trek.images });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
+};
 
-  // Gather all Cloudinary public IDs (cover image + all extra images)
-  const imagesToDelete = [trek.coverImage, ...trek.images]
-    .filter(img => img?.publicId); // filter out any that don't have a publicId
+const deleteTrek = async (req, res) => {
+  try {
+    const trek = await Trek.findById(req.params.id);
+    if (!trek) return res.status(404).json({ message: 'Trek not found' });
 
-  // Delete all images from Cloudinary simultaneously
-  // Promise.all runs all deletions at the same time instead of one by one
-  await Promise.all(
-    imagesToDelete.map(img => cloudinary.uploader.destroy(img.publicId))
-  );
+    const ids = [];
+    if (trek.coverImage?.publicId) ids.push(trek.coverImage.publicId);
+    trek.images.forEach(img => { if (img.publicId) ids.push(img.publicId); });
+    await Promise.all(ids.map(id => cloudinary.uploader.destroy(id).catch(() => {})));
 
-  // Delete the trek document from MongoDB
-  await trek.deleteOne();
-
-  res.json({ message: 'Trek deleted successfully' });
+    await trek.deleteOne();
+    res.json({ message: 'Trek deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 module.exports = {
-  getTreks,
-  getTrekBySlug,
-  getAllTreksAdmin,
-  createTrek,
-  updateTrek,
-  addTrekImages,
-  deleteTrek,
+  getTreks, getAllTreksAdmin, getTrekBySlug,
+  createTrek, updateTrek, addTrekImages, deleteTrekImage, deleteTrek,
 };

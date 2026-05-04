@@ -63,6 +63,10 @@ const trekSchema = new mongoose.Schema(
     coverImage: {
       url: String,
       publicId: String,
+      position: {
+        type: String,
+        default: 'center center',
+      },
     },
 
     // Array of additional photos for the trek detail page

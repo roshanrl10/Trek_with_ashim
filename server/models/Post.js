@@ -25,6 +25,7 @@ const postSchema = new mongoose.Schema(
     coverImage: {
       url: String,
       publicId: String,
+      position: { type: String, default: 'center center' },
     },
 
     category: {

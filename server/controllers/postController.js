@@ -86,6 +86,7 @@ const createPost = async (req, res) => {
     data.coverImage = {
       url:      req.file.path,
       publicId: req.file.filename,
+      position: data.coverPosition || 'center center',
     };
   }
 
@@ -119,6 +120,13 @@ const updatePost = async (req, res) => {
     data.coverImage = {
       url:      req.file.path,
       publicId: req.file.filename,
+      position: data.coverPosition || post.coverImage?.position || 'center center',
+    };
+  } else if (data.coverPosition) {
+    // Update position even if no new image is uploaded
+    data.coverImage = {
+      ...post.coverImage,
+      position: data.coverPosition,
     };
   }
 

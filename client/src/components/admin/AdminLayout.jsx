@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
-import { Mountain, LayoutDashboard, Map, Images, FileText, LogOut, Menu, X, ExternalLink } from 'lucide-react'
+import {
+  Mountain, LayoutDashboard, Map, Images, FileText,
+  LogOut, Menu, X, ExternalLink, Mail, Settings, User
+} from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 const AdminLayout = ({ children }) => {
@@ -14,10 +17,13 @@ const AdminLayout = ({ children }) => {
   }
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard',  path: '/admin' },
-    { icon: Map,             label: 'Treks',      path: '/admin/treks' },
-    { icon: Images,          label: 'Gallery',    path: '/admin/gallery' },
-    { icon: FileText,        label: 'Blog Posts', path: '/admin/posts' },
+    { icon: LayoutDashboard, label: 'Dashboard',      path: '/admin' },
+    { icon: Map,             label: 'Treks',          path: '/admin/treks' },
+    { icon: Images,          label: 'Gallery',        path: '/admin/gallery' },
+    { icon: FileText,        label: 'Blog Posts',     path: '/admin/posts' },
+    { icon: Mail,            label: 'Messages',       path: '/admin/messages' },
+    { icon: Settings,        label: 'Site Settings',  path: '/admin/settings' },
+    { icon: User,            label: 'About Page',     path: '/admin/about' },
   ]
 
   // Styles defined outside JSX to avoid parsing issues

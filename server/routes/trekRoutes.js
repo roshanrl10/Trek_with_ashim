@@ -9,6 +9,7 @@ const {
   createTrek,
   updateTrek,
   addTrekImages,
+  deleteTrekImage,
   deleteTrek,
 } = require('../controllers/trekController');
 
@@ -67,6 +68,9 @@ router.post(
   uploadTrekPhoto.array('images', 20), // handle up to 20 images at once
   addTrekImages
 );
+
+// DELETE /api/treks/:id/images/:imageId → delete one extra trek photo
+router.delete('/:id/images/:imageId', protect, adminOnly, deleteTrekImage);
 
 // DELETE /api/treks/:id → delete a trek
 router.delete('/:id', protect, adminOnly, deleteTrek);
