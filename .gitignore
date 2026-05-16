@@ -1,3 +1,13 @@
+# Ignore environment files containing secrets
+server/.env
+client/.env
+client/.env.*
+.env
+
+# Node modules and build outputs
+node_modules/
+dist/
+build/
 # dependencies
 node_modules/
 
