@@ -2,7 +2,7 @@
 const jwt = require('jsonwebtoken');
 
 // We need the User model to find the user by their ID stored in the token
-const User = require('../models/user');
+const User = require('../models/User');
 
 // ─────────────────────────────────────────────
 // MIDDLEWARE 1: protect
