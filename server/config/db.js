@@ -3,7 +3,11 @@ const mongoose = require('mongoose'); //we import the mongose so it lets us talk
 const connectDB = async ()=>{
     //creating the connectDB function and using async function so it will do the thing that takes time like connecting to the internet
     try{
-        const conn = await mongoose.connect(process.env.MONGO_URI);
+        const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/trek_with_ashim';
+        if (!process.env.MONGO_URI) {
+            console.warn('MONGO_URI not set in environment — falling back to', mongoUri);
+        }
+        const conn = await mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true });
         console.log(`MongoDB Connected: ${conn.connection.host}`);
 
     }
