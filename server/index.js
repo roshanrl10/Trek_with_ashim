@@ -22,9 +22,24 @@ const app = express();
 
 // MIDDLEWARE — code that runs on every single request before it reaches the route
 
-// Allow requests from our React frontend
+// Allow requests from our React frontend.
+// Support multiple allowed origins via `CLIENT_URLS` env var (comma-separated),
+// fall back to `CLIENT_URL` for local development. If no origins are set,
+// allow all origins to avoid CORS issues in deployments (safe when behind other
+// access controls).
+const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || '').split(',').map(s => s.trim()).filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL, // only allow requests from our frontend URL
+  origin: (origin, callback) => {
+    // Allow non-browser requests (like curl, server-to-server)
+    if (!origin) return callback(null, true);
+    // If no explicit origins configured, allow the request
+    if (allowedOrigins.length === 0) return callback(null, true);
+    // Allow when origin is in the allowed list
+    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
+    // Otherwise block
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 
