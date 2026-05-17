@@ -18,8 +18,8 @@ const uploadSettingsImage = multer({ storage: settingsStorage });
 const getSettings = async (req, res) => {
   try {
     let settings = await SiteSettings.findOne({ key: 'main' });
-    if (!settings) settings = await SiteSettings.create({ key: 'main' });
-    res.json(settings);
+    if (!settings) {settings = await SiteSettings.create({ key: 'main' });
+    res.json(settings);}
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
