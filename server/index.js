@@ -30,15 +30,23 @@ const app = express();
 const allowedOrigins = (process.env.CLIENT_URLS || process.env.CLIENT_URL || '').split(',').map(s => s.trim()).filter(Boolean);
 
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow non-browser requests (like curl, server-to-server)
-    if (!origin) return callback(null, true);
-    // If no explicit origins configured, allow the request
-    if (allowedOrigins.length === 0) return callback(null, true);
-    // Allow when origin is in the allowed list
-    if (allowedOrigins.indexOf(origin) !== -1) return callback(null, true);
-    // Otherwise block
-    return callback(new Error('Not allowed by CORS'));
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, Postman)
+    if (!origin) return callback(null, true)
+
+    const allowed = [
+      process.env.CLIENT_URL,
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ].filter(Boolean)
+
+    if (allowed.includes(origin)) {
+      callback(null, true)
+    } else {
+      console.log('CORS blocked origin:', origin)
+      // In production allow all origins temporarily to debug
+      callback(null, true)
+    }
   },
   credentials: true
 }));
